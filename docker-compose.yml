@@ -1,0 +1,72 @@
+# Local development infrastructure.
+#
+# `name` pins the Compose project so container and volume names do not follow
+# whatever the checkout directory happens to be called.
+name: app-starter
+
+services:
+  postgres:
+    build:
+      context: ./docker/postgres
+      dockerfile: Dockerfile
+    container_name: app-starter-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: app_starter
+      POSTGRES_USER: app_starter
+      POSTGRES_PASSWORD: app_starter
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - '${POSTGRES_PORT:-5432}:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U app_starter -d app_starter']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app-starter-network
+
+  # Catches every outbound email in development. Web UI on http://localhost:8025.
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: app-starter-mailpit
+    restart: unless-stopped
+    ports:
+      - '${MAILPIT_SMTP_PORT:-1025}:1025'
+      - '${MAILPIT_UI_PORT:-8025}:8025'
+    networks:
+      - app-starter-network
+    healthcheck:
+      test: ['CMD', 'wget', '--quiet', '--tries=1', '--spider', 'http://localhost:8025']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: app-starter-redis
+    restart: unless-stopped
+    ports:
+      - '${REDIS_PORT:-6379}:6379'
+    volumes:
+      - redis_data:/data
+    networks:
+      - app-starter-network
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    command: redis-server --appendonly yes
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  app-starter-network:
+    driver: bridge

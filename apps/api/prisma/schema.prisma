@@ -1,0 +1,421 @@
+// ============================================================================
+// App Starter schema
+//
+// Fourteen models covering identity, multi-tenancy, custom domains,
+// notifications, and one example organization-scoped vertical (Project).
+// There is no billing here on purpose — see
+// docs/adr/0008-no-billing-in-the-starter.md.
+//
+// `Organization` is the tenant. Every organization-scoped model carries an
+// `organizationId` and is indexed on it, and every query filters by it. See
+// docs/adr/0006-single-database-multi-tenancy.md, and `Project` below for the
+// shape to copy.
+//
+// Conventions: timestamps are `@db.Timestamptz(6)`, columns are snake_case via
+// `@map`, tables are pluralised via `@@map`.
+// ============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ============================================================================
+// Identity
+// ============================================================================
+
+model User {
+  id              String    @id @default(uuid())
+  email           String    @unique
+  password        String? // Hashed; nullable for OAuth/OTP-only signups
+  name            String?
+  username        String?   @unique
+  avatarUrl       String?   @map("avatar_url")
+  bio             String?
+  timezone        String? // IANA identifier, e.g. "America/New_York"
+  emailVerifiedAt DateTime? @db.Timestamptz(6)
+  lastLoginAt     DateTime? @db.Timestamptz(6)
+  quarantinedAt   DateTime? @db.Timestamptz(6)
+  isGlobalAdmin   Boolean   @default(false) @map("is_global_admin")
+
+  // Google OAuth
+  googleId       String?   @unique @map("google_id")
+  googleEmail    String?   @map("google_email")
+  googleName     String?   @map("google_name")
+  googlePicture  String?   @map("google_picture")
+  googleLinkedAt DateTime? @map("google_linked_at")
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+
+  // Relations
+  memberships             OrganizationMember[]
+  emailVerifications      UserEmailVerification[]
+  notifications           Notification[]
+  notificationPreferences NotificationPreference[]
+  inAppNotifications      InAppNotification[]
+  createdProjects         Project[]                @relation("ProjectCreator")
+
+  adminImpersonationAudits AdminImpersonationAudit[] @relation("AdminImpersonationTargetUser")
+  quarantinedAudits        AdminQuarantineAudit[]    @relation("QuarantinedUser")
+  quarantineActions        AdminQuarantineAudit[]    @relation("QuarantineAdmin")
+
+  @@index([isGlobalAdmin])
+  @@index([username])
+  @@map("users")
+}
+
+model UserEmailVerification {
+  id        String    @id @default(uuid())
+  userId    String
+  token     String    @unique
+  email     String
+  expiresAt DateTime  @db.Timestamptz(6) // 24h from createdAt
+  usedAt    DateTime? @db.Timestamptz(6)
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId])
+  @@map("user_email_verifications")
+}
+
+// ============================================================================
+// Platform administration
+// ============================================================================
+
+model AdminImpersonationAudit {
+  id           String   @id @default(uuid())
+  actor        String
+  targetUserId String   @map("target_user_id")
+  reason       String
+  jti          String   @unique
+  ip           String?
+  userAgent    String?  @map("user_agent")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  targetUser User @relation("AdminImpersonationTargetUser", fields: [targetUserId], references: [id], onDelete: Cascade)
+
+  @@index([targetUserId, createdAt])
+  @@map("admin_impersonation_audits")
+}
+
+model AdminQuarantineAudit {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  adminId   String   @map("admin_id")
+  action    String // 'QUARANTINE' | 'UNQUARANTINE'
+  reason    String?
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user  User @relation("QuarantinedUser", fields: [userId], references: [id])
+  admin User @relation("QuarantineAdmin", fields: [adminId], references: [id])
+
+  @@index([userId])
+  @@index([adminId])
+  @@map("admin_quarantine_audits")
+}
+
+// ============================================================================
+// Multi-tenancy
+// ============================================================================
+
+enum OrgRole {
+  OWNER // Full control incl. billing and deletion; assigned to creator
+  ADMIN // Can manage members, settings, and invites
+  MEMBER // Default role for invitees
+}
+
+model Organization {
+  id          String  @id @default(uuid())
+  name        String
+  slug        String  @unique
+  description String?
+  website     String?
+  location    String?
+  timezone    String? // IANA identifier
+  logoUrl     String? @map("logo_url")
+
+  // Outbound email identity for this tenant
+  emailReplyTo    String? @map("email_reply_to")
+  emailSenderName String? @map("email_sender_name")
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+
+  members                 OrganizationMember[]
+  invites                 OrganizationInvite[]
+  domainMappings          DomainMapping[]
+  notifications           Notification[]
+  notificationPreferences NotificationPreference[]
+  projects                Project[]
+
+  @@map("organizations")
+}
+
+model OrganizationMember {
+  id             String   @id @default(uuid())
+  userId         String   @map("user_id")
+  organizationId String   @map("organization_id")
+  role           OrgRole
+  createdAt      DateTime @default(now()) @db.Timestamptz(6)
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, organizationId])
+  @@index([userId])
+  @@index([organizationId])
+  @@index([userId, role, organizationId])
+  @@map("organization_members")
+}
+
+enum InviteStatus {
+  PENDING
+  ACCEPTED
+  CANCELLED
+  EXPIRED // Calculated, not stored
+}
+
+model OrganizationInvite {
+  id             String       @id @default(uuid())
+  organizationId String       @map("organization_id")
+  token          String       @unique
+  email          String? // Null for reusable link invites
+  isReusable     Boolean      @default(false) @map("is_reusable")
+  /// Role assigned on acceptance; immutable after send
+  invitedRole    OrgRole      @default(MEMBER) @map("invited_role")
+  expiresAt      DateTime     @db.Timestamptz(6)
+  status         InviteStatus @default(PENDING)
+  createdBy      String       @map("created_by")
+  createdAt      DateTime     @default(now()) @db.Timestamptz(6)
+  updatedAt      DateTime     @updatedAt @db.Timestamptz(6)
+
+  organization       Organization              @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  emailVerifications InviteEmailVerification[]
+
+  @@index([token])
+  @@index([organizationId, status])
+  @@map("organization_invites")
+}
+
+model InviteEmailVerification {
+  id        String    @id @default(uuid())
+  inviteId  String    @map("invite_id")
+  token     String    @unique
+  email     String
+  name      String?
+  expiresAt DateTime  @db.Timestamptz(6) // 24h from createdAt
+  usedAt    DateTime? @db.Timestamptz(6)
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+
+  invite OrganizationInvite @relation(fields: [inviteId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([inviteId])
+  @@map("invite_email_verifications")
+}
+
+// ============================================================================
+// Custom domains
+// ============================================================================
+
+enum DomainVerificationStatus {
+  PENDING // Awaiting DNS configuration
+  VERIFIED // DNS TXT record confirmed
+  FAILED // Record missing or incorrect
+}
+
+model DomainMapping {
+  id                 String                   @id @default(uuid())
+  organizationId     String                   @map("organization_id")
+  domain             String                   @unique // Lowercase hostname
+  verificationStatus DomainVerificationStatus @default(PENDING) @map("verification_status")
+  verificationToken  String                   @unique @map("verification_token") // UUID for DNS TXT record
+  verifiedAt         DateTime?                @map("verified_at") @db.Timestamptz(6)
+  errorMessage       String?                  @map("error_message")
+
+  // Per-domain white-label branding
+  customLogoUrl    String? @map("custom_logo_url")
+  logoHeight       Int?    @map("logo_height")
+  customFaviconUrl String? @map("custom_favicon_url")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([domain])
+  @@index([organizationId])
+  @@index([verificationStatus])
+  @@map("domain_mappings")
+}
+
+// ============================================================================
+// Notifications
+// ============================================================================
+
+enum NotificationType {
+  TRANSACTIONAL
+  SYSTEM
+}
+
+enum NotificationChannel {
+  EMAIL
+  SMS
+  PUSH
+  IN_APP
+}
+
+enum NotificationStatus {
+  PENDING
+  QUEUED
+  SENT
+  FAILED
+}
+
+model Notification {
+  id                String              @id @default(cuid())
+  type              NotificationType
+  channel           NotificationChannel
+  definitionName    String              @map("definition_name")
+  recipient         Json
+  recipientEmail    String?             @map("recipient_email")
+  recipientPhone    String?             @map("recipient_phone")
+  subject           String?
+  variables         Json?
+  status            NotificationStatus
+  providerMessageId String?             @map("provider_message_id")
+  organizationId    String?             @map("organization_id")
+  userId            String?             @map("user_id")
+
+  sentAt       DateTime? @map("sent_at") @db.Timestamptz(6)
+  deliveredAt  DateTime? @map("delivered_at") @db.Timestamptz(6)
+  openedAt     DateTime? @map("opened_at") @db.Timestamptz(6)
+  clickedAt    DateTime? @map("clicked_at") @db.Timestamptz(6)
+  failedAt     DateTime? @map("failed_at") @db.Timestamptz(6)
+  errorCode    String?   @map("error_code")
+  errorMessage String?   @map("error_message")
+  metadata     Json?
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User?         @relation(fields: [userId], references: [id])
+
+  @@index([recipientEmail, status])
+  @@index([recipientPhone, status])
+  @@index([type, channel, status])
+  @@index([organizationId, createdAt])
+  @@index([userId, createdAt])
+  @@index([providerMessageId])
+  @@index([definitionName])
+  @@map("notifications")
+}
+
+model NotificationPreference {
+  id             String              @id @default(cuid())
+  userId         String              @map("user_id")
+  organizationId String?             @map("organization_id")
+  channel        NotificationChannel
+  type           NotificationType
+  enabled        Boolean             @default(true)
+  definitionName String?             @map("definition_name")
+  category       String?
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, organizationId, channel, type, definitionName])
+  @@index([userId, organizationId])
+  @@index([userId, category])
+  @@index([definitionName])
+  @@map("notification_preferences")
+}
+
+model InAppNotification {
+  id          String    @id @default(cuid())
+  userId      String    @map("user_id")
+  type        String // 'invitation' | 'acceptance' | 'billing' | 'system'
+  title       String
+  description String
+  data        Json
+  read        Boolean   @default(false)
+  dismissed   Boolean   @default(false)
+  createdAt   DateTime  @default(now()) @map("created_at")
+  readAt      DateTime? @map("read_at")
+  dismissedAt DateTime? @map("dismissed_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([userId, read])
+  @@index([createdAt])
+  @@map("in_app_notifications")
+}
+
+// ============================================================================
+// Utilities
+// ============================================================================
+
+model ShortLink {
+  id          String  @id @default(uuid())
+  slug        String  @unique
+  targetUrl   String  @map("target_url")
+  description String?
+
+  /// Optional linkage for cleanup when the referenced record is deleted
+  entityId   String? @map("entity_id")
+  entityType String? @map("entity_type")
+
+  clicks    Int      @default(0)
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+
+  @@index([slug])
+  @@map("short_links")
+}
+
+// ============================================================================
+// Example vertical
+//
+// Deliberately minimal. Exists so the boilerplate demonstrates tenant scoping,
+// role guards, DTO validation, slug generation, soft delete, and the web query
+// hooks end to end. Delete or rename it when building a real product.
+// ============================================================================
+
+enum ProjectVisibility {
+  PRIVATE // Creator only
+  ORGANIZATION // Any member of the owning organization
+  PUBLIC // Anyone with the link
+}
+
+model Project {
+  id             String            @id @default(uuid())
+  organizationId String            @map("organization_id")
+  createdById    String            @map("created_by_id")
+  name           String
+  slug           String
+  description    String?
+  visibility     ProjectVisibility @default(ORGANIZATION)
+  archivedAt     DateTime?         @map("archived_at") @db.Timestamptz(6)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy    User         @relation("ProjectCreator", fields: [createdById], references: [id])
+
+  @@unique([organizationId, slug])
+  @@index([organizationId, archivedAt])
+  @@index([createdById])
+  @@map("projects")
+}

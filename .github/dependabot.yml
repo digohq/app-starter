@@ -1,0 +1,29 @@
+version: 2
+
+updates:
+  # Grouped so a weekly bump is one reviewable PR per ecosystem rather than
+  # a dozen. Major versions stay separate — those need a human to read.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      actions:
+        update-types: [minor, patch]
+
+  - package-ecosystem: docker
+    directories:
+      - /docker/postgres
+      - /apps/api
+      - /apps/web
+    schedule:
+      interval: monthly

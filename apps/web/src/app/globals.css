@@ -1,0 +1,253 @@
+/**
+ * Global styles – the design tokens in src/styles.
+ * Tokens (colors, spacing, typography, shadows, radius) come from src/styles/tokens.css.
+ * Semantic RGB vars below allow Tailwind opacity modifiers (e.g. bg-primary/10) with DS colors.
+ */
+@import '../styles/tokens.css';
+@import '../styles/rich-text.css';
+
+@layer base {
+  :root {
+    /* RGB triplets from DS light theme for opacity-aware utilities */
+    --background-rgb: 249 250 251; /* dew */
+    --foreground-rgb: 15 23 42; /* soil */
+    --primary-rgb: 15 23 42; /* soil */
+    --primary-foreground-rgb: 249 250 251;
+    --muted-rgb: 229 231 235; /* mist */
+    --muted-foreground-rgb: 75 85 99; /* stem */
+    --border-rgb: 229 231 235;
+    --card-rgb: 249 250 251;
+    --accent-rgb: 229 231 235;
+    --accent-foreground-rgb: 15 23 42;
+    --sidebar-rgb: 249 250 251;
+    --sidebar-foreground-rgb: 75 85 99;
+    --sidebar-border-rgb: 229 231 235;
+    /* Destructive (from tokens.css --color-destructive) */
+    --destructive-rgb: 185 28 28;
+  }
+
+  .dark {
+    --background-rgb: 31 41 55; /* dew (dark) */
+    --foreground-rgb: 243 244 246; /* soil (dark) */
+    --primary-rgb: 243 244 246;
+    --primary-foreground-rgb: 15 23 42;
+    --muted-rgb: 55 65 81; /* mist (dark) */
+    --muted-foreground-rgb: 156 163 175;
+    --border-rgb: 55 65 81;
+    --card-rgb: 31 41 55;
+    --accent-rgb: 55 65 81;
+    --accent-foreground-rgb: 243 244 246;
+    --sidebar-rgb: 15 23 42;
+    --sidebar-foreground-rgb: 243 244 246;
+    --sidebar-border-rgb: 55 65 81;
+    /* Destructive dark (from tokens.css .dark --color-destructive) */
+    --destructive-rgb: 248 113 113;
+  }
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    border-color: var(--color-mist);
+  }
+
+  html,
+  body {
+    font-family: var(--font-primary);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    background-color: var(--color-dew);
+    color: var(--color-soil);
+  }
+
+  /* Typography – DS text scale */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-weight: var(--font-weight-semibold);
+    letter-spacing: var(--letter-spacing-tight);
+  }
+
+  h1 {
+    font-size: var(--text-4xl);
+    line-height: var(--line-height-tight);
+  }
+  h2 {
+    font-size: var(--text-3xl);
+    line-height: var(--line-height-tight);
+  }
+  h3 {
+    font-size: var(--text-2xl);
+    line-height: var(--line-height-snug);
+  }
+  h4 {
+    font-size: var(--text-xl);
+    line-height: var(--line-height-snug);
+  }
+  h5 {
+    font-size: var(--text-lg);
+    line-height: var(--line-height-normal);
+  }
+  h6 {
+    font-size: var(--text-base);
+    line-height: var(--line-height-normal);
+  }
+}
+
+@layer components {
+  /* Rich text editor (TipTap) – shares the .rich-text look while editing */
+  .rich-text-editor__content {
+    color: var(--color-soil);
+    word-break: break-word;
+  }
+
+  .rich-text-editor__content h2 {
+    font-size: var(--text-2xl);
+    font-weight: var(--font-weight-semibold);
+    margin-top: 1.25rem;
+    margin-bottom: 0.75rem;
+    line-height: var(--line-height-tight);
+  }
+
+  .rich-text-editor__content h3 {
+    font-size: var(--text-xl);
+    font-weight: var(--font-weight-semibold);
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+    line-height: var(--line-height-snug);
+  }
+
+  .rich-text-editor__content p {
+    margin-bottom: 0.75rem;
+    line-height: var(--line-height-relaxed);
+  }
+
+  .rich-text-editor__content ul {
+    list-style-type: disc;
+    list-style-position: outside;
+    margin-left: 1.5rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .rich-text-editor__content ol {
+    list-style-type: decimal;
+    list-style-position: outside;
+    margin-left: 1.5rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .rich-text-editor__content li {
+    margin-bottom: 0.25rem;
+    padding-left: 0.25rem;
+  }
+
+  .rich-text-editor__content blockquote {
+    border-left: 4px solid var(--color-mist);
+    padding-left: 1rem;
+    font-style: italic;
+    margin: 0.75rem 0;
+    color: var(--color-stem);
+  }
+
+  .rich-text-editor__content a {
+    text-decoration: underline;
+    text-underline-offset: 4px;
+  }
+
+  /* Placeholder rendered by @tiptap/extension-placeholder on the empty node */
+  .rich-text-editor__content p.is-empty:first-child::before {
+    content: attr(data-placeholder);
+    color: var(--color-stem);
+    float: left;
+    height: 0;
+    pointer-events: none;
+  }
+
+  /* Subtle gradient using DS colors (replaces brand gradients) */
+  .bg-gradient-subtle {
+    background: linear-gradient(135deg, var(--color-dew) 0%, var(--color-mist) 100%);
+  }
+
+  .dark .bg-gradient-subtle {
+    background: linear-gradient(135deg, var(--color-dew) 0%, var(--color-mist) 100%);
+  }
+
+  /* Transition utility – aligns with DS --transition-standard */
+  .transition-smooth {
+    transition: all var(--transition-standard);
+  }
+
+  .hover-lift {
+    transition: all var(--transition-standard);
+  }
+
+  .hover-lift:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+  }
+
+  .container-padding {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  @media (min-width: 640px) {
+    .container-padding {
+      padding-left: 1.5rem;
+      padding-right: 1.5rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .container-padding {
+      padding-left: 2rem;
+      padding-right: 2rem;
+    }
+  }
+
+  .section-spacing {
+    padding-top: 4rem;
+    padding-bottom: 4rem;
+  }
+
+  @media (min-width: 1024px) {
+    .section-spacing {
+      padding-top: 6rem;
+      padding-bottom: 6rem;
+    }
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  /* AI session tags pop-in (matches design app StandaloneSessionPage) */
+  @keyframes tagPop {
+    0% {
+      opacity: 0;
+      transform: scale(0.6);
+    }
+    60% {
+      transform: scale(1.1);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  .animate-tag-pop {
+    animation: tagPop 0.3s ease-out forwards;
+  }
+}

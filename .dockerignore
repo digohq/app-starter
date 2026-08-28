@@ -1,0 +1,63 @@
+# Both Dockerfiles build from the monorepo root, because pnpm workspaces need
+# the root lockfile. Docker only reads the .dockerignore at the context root,
+# so this file — not apps/*/.dockerignore — is what actually applies.
+
+# Secrets. Without this, whoever builds the image bakes their own local .env
+# into it, and pushing that image publishes their credentials.
+# Order matters: later patterns win, so the example files are re-included last.
+.env
+**/.env
+**/.env.*
+**/*.env
+!**/.env.example
+!**/.env.test.example
+secrets/
+*.pem
+
+# Dependencies and build output — reinstalled and rebuilt inside the image, and
+# host binaries may not match the image platform.
+**/node_modules
+**/dist
+**/.next
+**/build
+**/out
+**/*.tsbuildinfo
+.pnpm-store/
+
+# Tooling caches
+**/.turbo
+**/.swc
+**/coverage
+**/.eslintcache
+.cache/
+
+# Runtime and test artifacts
+**/uploads
+**/test-uploads
+**/*.log
+
+# Repository metadata and docs, none of which the runtime needs
+.git
+.gitignore
+.gitattributes
+.github
+.husky
+.devcontainer
+.claude
+docs
+*.md
+!apps/api/README.md
+!apps/web/README.md
+
+# Local-only infrastructure
+docker-compose.yml
+docker-compose.override.yml
+docker-compose.override.yml.example
+docker/
+
+# Editor and OS noise
+.vscode
+.idea
+*.swp
+*.swo
+.DS_Store

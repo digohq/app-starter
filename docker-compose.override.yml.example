@@ -1,0 +1,15 @@
+# Example override file for local development
+# Copy this to docker-compose.override.yml and customize as needed
+# docker-compose.override.yml is automatically loaded by docker-compose
+
+version: '3.8'
+
+services:
+  postgres:
+    # Override environment variables for local development
+    environment:
+      POSTGRES_PASSWORD: your-custom-password
+    # Uncomment to use a different port
+    # ports:
+    #   - "5433:5432"
+

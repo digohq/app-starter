@@ -1,0 +1,57 @@
+{
+  "$schema": "https://raw.githubusercontent.com/devcontainers/spec/main/schemas/devContainer.schema.json",
+  "name": "App Starter",
+
+  // Node version is pinned by .nvmrc; keep this image tag in step with it.
+  "image": "mcr.microsoft.com/devcontainers/typescript-node:1-22-bookworm",
+
+  "features": {
+    // Postgres, Redis, and Mailpit run via docker compose, so the container
+    // needs its own Docker daemon.
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+    "ghcr.io/devcontainers/features/git:1": {}
+  },
+
+  "forwardPorts": [3000, 3001, 8025, 5432, 6379],
+  "portsAttributes": {
+    "3000": { "label": "Web", "onAutoForward": "openBrowserOnce" },
+    "3001": { "label": "API" },
+    "8025": { "label": "Mailpit (all outbound email)" },
+    "5432": { "label": "PostgreSQL" },
+    "6379": { "label": "Redis" }
+  },
+
+  // Installs deps, starts the containers, migrates, and seeds. Safe to re-run.
+  "onCreateCommand": "corepack enable && corepack prepare pnpm@10.26.0 --activate",
+  "postCreateCommand": "pnpm bootstrap",
+
+  // In a browser-based Codespace the web app is served from a *.app.github.dev
+  // origin, so the default NEXT_PUBLIC_API_URL of http://localhost:3001 does
+  // not resolve. Set it to the forwarded API URL and make port 3001 public.
+  // VS Code's own port forwarding makes localhost work as-is.
+  "postAttachCommand": {
+    "hint": "echo 'Codespaces: if the web app cannot reach the API, set NEXT_PUBLIC_API_URL in apps/web/.env.local to the forwarded URL for port 3001, make that port Public, and restart pnpm dev.'"
+  },
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "Prisma.prisma",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "bradlc.vscode-tailwindcss",
+        "editorconfig.editorconfig",
+        "anthropic.claude-code"
+      ],
+      "settings": {
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.codeActionsOnSave": { "source.fixAll.eslint": "explicit" },
+        "typescript.tsdk": "node_modules/typescript/lib",
+        "typescript.enablePromptUseWorkspaceTsdk": true
+      }
+    }
+  },
+
+  "remoteUser": "node"
+}

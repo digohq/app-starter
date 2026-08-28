@@ -1,0 +1,143 @@
+/**
+ * Rendered rich-text content (`RichText` in components/ui).
+ *
+ * Lives here rather than in the app's globals: `RichText` depends on these
+ * classes, and every consumer of the component needs them. Without it, bulleted bios lose their
+ * bullets and the inline variant collapses to an unstyled span.
+ *
+ * Import once per app, after `tokens.css` (these rules reference its custom properties).
+ *
+ * Deliberately NOT wrapped in `@layer components`: Turbopack runs PostCSS on each imported CSS
+ * file as its own entry, so a Tailwind `@layer` here fails with "no matching `@tailwind
+ * components` directive is present". Precedence instead comes from source order – importing this
+ * file at the top of an app's globals puts it ahead of `@tailwind utilities`, so utilities passed
+ * via `className` still win at equal specificity.
+ */
+
+/* Rich text – used for sponsor/editor content */
+.rich-text {
+  color: var(--color-soil);
+  word-break: break-word;
+}
+
+.rich-text h1 {
+  font-size: var(--text-3xl);
+  font-weight: var(--font-weight-bold);
+  margin-top: 1.5rem;
+  margin-bottom: 1rem;
+  line-height: var(--line-height-tight);
+}
+
+.rich-text h2 {
+  font-size: var(--text-2xl);
+  font-weight: var(--font-weight-semibold);
+  margin-top: 1.25rem;
+  margin-bottom: 0.75rem;
+  line-height: var(--line-height-tight);
+}
+
+.rich-text h3 {
+  font-size: var(--text-xl);
+  font-weight: var(--font-weight-semibold);
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+  line-height: var(--line-height-snug);
+}
+
+.rich-text p {
+  margin-bottom: 1rem;
+  line-height: var(--line-height-relaxed);
+}
+
+.rich-text ul {
+  list-style-type: disc;
+  list-style-position: outside;
+  margin-left: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.rich-text ol {
+  list-style-type: decimal;
+  list-style-position: outside;
+  margin-left: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.rich-text li {
+  margin-bottom: 0.25rem;
+  padding-left: 0.25rem;
+}
+
+.rich-text li p {
+  margin-bottom: 0.5rem;
+}
+
+.rich-text a {
+  color: var(--color-soil);
+  font-weight: var(--font-weight-medium);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.rich-text a:hover {
+  opacity: 0.8;
+}
+
+.rich-text blockquote {
+  border-left: 4px solid var(--color-mist);
+  padding-left: 1rem;
+  font-style: italic;
+  margin: 1rem 0;
+  color: var(--color-stem);
+}
+
+.rich-text img {
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  max-width: 100%;
+  height: auto;
+  margin: 1.5rem 0;
+}
+
+.rich-text hr {
+  margin: 2rem 0;
+  border-color: var(--color-mist);
+}
+
+/* Inline variant – card/summary surfaces: no block margins, inherits the local type scale */
+.rich-text--inline {
+  display: block;
+  color: inherit;
+  font-size: inherit;
+  line-height: inherit;
+}
+
+.rich-text--inline p,
+.rich-text--inline ul,
+.rich-text--inline ol,
+.rich-text--inline blockquote {
+  margin: 0;
+  line-height: inherit;
+}
+
+.rich-text--inline p + p {
+  margin-top: 0.5rem;
+}
+
+.rich-text--inline a {
+  color: inherit;
+  font-weight: inherit;
+}
+
+/* Clamp variant – truncate to `--rich-text-clamp` lines on card surfaces */
+.rich-text--clamp {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: var(--rich-text-clamp, 2);
+  line-clamp: var(--rich-text-clamp, 2);
+  overflow: hidden;
+}
+
+.rich-text--clamp > *:last-child {
+  margin-bottom: 0;
+}

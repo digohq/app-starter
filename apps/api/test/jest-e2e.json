@@ -1,0 +1,15 @@
+{
+  "globalSetup": "../scripts/test-db-setup.js",
+  "globalTeardown": "../scripts/test-db-teardown.js",
+  "setupFiles": ["../jest.setup.js"],
+  "moduleFileExtensions": ["js", "json", "ts"],
+  "rootDir": ".",
+  "testEnvironment": "node",
+  "testRegex": ".(e2e|integration).spec.ts$",
+  "transform": {
+    "^.+\\.(t|j)s$": "ts-jest"
+  },
+  "moduleNameMapper": {
+    "^@app-starter/shared$": "<rootDir>/../../../packages/shared/src"
+  }
+}

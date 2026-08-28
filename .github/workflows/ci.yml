@@ -1,0 +1,148 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# A new push to the same branch cancels the run already in flight.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Matches apps/api/.env.test.example so the API test setup finds its database.
+  DATABASE_URL: postgresql://app_starter:app_starter@localhost:5432/app_starter_test?schema=public
+
+jobs:
+  # Static checks need no services, so they run on their own and fail fast.
+  static:
+    name: Lint, types, build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm --filter @app-starter/api exec prisma generate
+
+      - run: pnpm type-check
+
+      - run: pnpm lint
+
+      - run: pnpm build
+
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: app_starter_test
+          POSTGRES_USER: app_starter
+          POSTGRES_PASSWORD: app_starter
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U app_starter -d app_starter_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Create test env
+        run: cp apps/api/.env.test.example apps/api/.env.test
+
+      - name: Generate Prisma client
+        run: pnpm --filter @app-starter/api exec prisma generate
+
+      # The API's jest globalSetup applies migrations and seeds; running it
+      # here first surfaces a schema problem as a migration failure rather
+      # than as a confusing test failure.
+      - name: Apply migrations
+        run: pnpm --filter @app-starter/api exec prisma migrate deploy
+
+      - name: API tests
+        run: pnpm --filter @app-starter/api test
+
+      - name: Web tests
+        run: pnpm --filter @app-starter/web test
+
+  e2e:
+    name: API end-to-end
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: app_starter_test
+          POSTGRES_USER: app_starter
+          POSTGRES_PASSWORD: app_starter
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U app_starter -d app_starter_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Create test env
+        run: cp apps/api/.env.test.example apps/api/.env.test
+
+      - name: Generate Prisma client
+        run: pnpm --filter @app-starter/api exec prisma generate
+
+      - name: Apply migrations
+        run: pnpm --filter @app-starter/api exec prisma migrate deploy
+
+      - run: pnpm --filter @app-starter/api run test:e2e

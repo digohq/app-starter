@@ -1,0 +1,41 @@
+{
+  "name": "app-starter",
+  "version": "0.0.0",
+  "private": true,
+  "description": "A multi-tenant SaaS starter: NestJS, Next.js, and Prisma in a Turborepo",
+  "scripts": {
+    "prepare": "husky",
+    "bootstrap": "./scripts/bootstrap.sh",
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "start:api": "pnpm --filter @app-starter/api run start:prod",
+    "start:web": "pnpm --filter @app-starter/web run start",
+    "lint": "turbo run lint",
+    "type-check": "turbo run type-check",
+    "test": "turbo run test",
+    "verify": "turbo run type-check lint test",
+    "test:cov": "turbo run test:cov",
+    "clean": "turbo run clean",
+    "format": "prettier --write \"**/*.{ts,tsx,md,json,css,mjs,cjs}\" --ignore-path .gitignore",
+    "format:check": "prettier --check \"**/*.{ts,tsx,md,json,css,mjs,cjs}\" --ignore-path .gitignore"
+  },
+  "dependencies": {
+    "husky": "^9.1.7"
+  },
+  "devDependencies": {
+    "prettier": "^3.8.3",
+    "turbo": "^2.9.12",
+    "typescript": "^5.9.3"
+  },
+  "packageManager": "pnpm@10.26.0",
+  "engines": {
+    "node": ">=22.0.0",
+    "pnpm": ">=8.0.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "@types/react": "^19.0.0",
+      "@types/react-dom": "^19.0.0"
+    }
+  }
+}

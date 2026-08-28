@@ -1,0 +1,37 @@
+name: Feature request
+description: Suggest something the starter should include
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This is a starter, so the bar is "most projects building on it would
+        want this". Anything narrower is usually better as a fork or a recipe
+        in the docs.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve
+      description: The situation you hit, not the solution you have in mind.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What you would like it to do
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: What you tried instead
+      description: Workarounds you found, and why they fall short.
+
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Scope
+      options:
+        - label: I think most projects using this starter would want it
+        - label: I would be willing to open a pull request for it
