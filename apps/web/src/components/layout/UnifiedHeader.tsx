@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/navigation';
 import { Sheet, SheetTrigger, SheetContent } from '@/components/ui/Sheet';
 import { LOGO_PATH } from '@/lib/brand';
-import { Menu, Home, LayoutDashboard } from 'lucide-react';
+import { Menu, Home, Building2, Settings } from 'lucide-react';
 import { NotificationCenter } from '@/components/notifications/NotificationCenter';
 
 import { useAuth } from '@/hooks/use-auth';
@@ -56,9 +56,6 @@ export function UnifiedHeader({
         </div>
 
         <HeaderActions className="gap-3">
-          <Link href={getManagementUrl('/get-started')} className="hidden md:inline-flex">
-            <Button>Get Started</Button>
-          </Link>
           {showAuthenticatedUI ? (
             <>
               <NotificationCenter />
@@ -67,6 +64,9 @@ export function UnifiedHeader({
             </>
           ) : (
             <>
+              <Link href={getManagementUrl('/get-started')} className="hidden md:inline-flex">
+                <Button>Get Started</Button>
+              </Link>
               <Link href={getManagementUrl('/login')} className="hidden md:inline-flex">
                 <Button variant="outline">Login</Button>
               </Link>
@@ -81,40 +81,50 @@ export function UnifiedHeader({
             </SheetTrigger>
             <SheetContent side="right">
               <div className="flex flex-col gap-3">
-                <nav className="flex flex-col gap-2" aria-label="Main navigation">
-                  <Link
-                    href={getManagementUrl('/dashboard')}
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-                  >
-                    <Home className="h-5 w-5 flex-shrink-0" />
-                    <span>Home</span>
-                  </Link>
-                  <Link
-                    href={getManagementUrl('/dashboard')}
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-                  >
-                    <LayoutDashboard className="h-5 w-5 flex-shrink-0" />
-                    <span>Plan</span>
-                  </Link>
-                </nav>
-                <div className="h-px bg-border my-2" />
-                <Link
-                  href={getManagementUrl('/get-started')}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center justify-center px-4 py-2.5 rounded-xl bg-primary text-primary-foreground font-medium hover:opacity-90 transition-opacity"
-                >
-                  Get Started
-                </Link>
-                {!showAuthenticatedUI && (
-                  <Link
-                    href={getManagementUrl('/login')}
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center justify-center px-4 py-2.5 rounded-xl border border-input bg-background font-medium hover:bg-muted transition-colors"
-                  >
-                    Login
-                  </Link>
+                {showAuthenticatedUI ? (
+                  <nav className="flex flex-col gap-2" aria-label="Main navigation">
+                    <Link
+                      href={getManagementUrl('/dashboard')}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                    >
+                      <Home className="h-5 w-5 flex-shrink-0" />
+                      <span>Home</span>
+                    </Link>
+                    <Link
+                      href={getManagementUrl('/organizations')}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                    >
+                      <Building2 className="h-5 w-5 flex-shrink-0" />
+                      <span>Organizations</span>
+                    </Link>
+                    <Link
+                      href={getManagementUrl('/settings')}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                    >
+                      <Settings className="h-5 w-5 flex-shrink-0" />
+                      <span>Settings</span>
+                    </Link>
+                  </nav>
+                ) : (
+                  <>
+                    <Link
+                      href={getManagementUrl('/get-started')}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center justify-center px-4 py-2.5 rounded-xl bg-primary text-primary-foreground font-medium hover:opacity-90 transition-opacity"
+                    >
+                      Get Started
+                    </Link>
+                    <Link
+                      href={getManagementUrl('/login')}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center justify-center px-4 py-2.5 rounded-xl border border-input bg-background font-medium hover:bg-muted transition-colors"
+                    >
+                      Login
+                    </Link>
+                  </>
                 )}
               </div>
             </SheetContent>

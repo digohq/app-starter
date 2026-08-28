@@ -1,6 +1,6 @@
 # @app-starter/web
 
-Next.js frontend application for the App Starter event management platform.
+Next.js frontend application for the App Starter multi-tenant SaaS starter.
 
 ## Tech Stack
 

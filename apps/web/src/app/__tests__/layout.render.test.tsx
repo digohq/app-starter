@@ -1,10 +1,12 @@
 import { render, screen } from '@testing-library/react';
 import RootLayout from '../layout';
-import { headers } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import { domainMappingsApi } from '@/lib/domain-mappings-api';
+import { ACCESS_TOKEN_KEY } from '@/lib/auth-storage';
 
 jest.mock('next/headers', () => ({
   headers: jest.fn(),
+  cookies: jest.fn(),
 }));
 
 jest.mock('@/lib/domain-mappings-api', () => ({
@@ -62,12 +64,19 @@ jest.mock('@/components/ui/sonner', () => ({
   Toaster: () => null,
 }));
 
+/** Stands in for the cookie store; pass a token to act as a signed-in visitor. */
+const mockCookieStore = (accessToken?: string) => ({
+  get: (name: string) =>
+    name === ACCESS_TOKEN_KEY && accessToken ? { name, value: accessToken } : undefined,
+});
+
 describe('RootLayout sidebar visibility', () => {
   let consoleErrorSpy: jest.SpyInstance;
 
   beforeEach(() => {
     jest.clearAllMocks();
     (domainMappingsApi.resolve as jest.Mock).mockResolvedValue({ customLogoUrl: null });
+    (cookies as jest.Mock).mockResolvedValue(mockCookieStore('access-token'));
     consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
   });
 
@@ -97,5 +106,15 @@ describe('RootLayout sidebar visibility', () => {
     render(layout);
 
     expect(screen.getByTestId('app-side-nav')).toBeInTheDocument();
+  });
+
+  it('hides the sidebar from a signed-out visitor', async () => {
+    (headers as jest.Mock).mockResolvedValue(new Map([['host', 'localhost:3000']]));
+    (cookies as jest.Mock).mockResolvedValue(mockCookieStore());
+
+    const layout = await RootLayout({ children: <div>content</div> });
+    render(layout);
+
+    expect(screen.queryByTestId('app-side-nav')).not.toBeInTheDocument();
   });
 });

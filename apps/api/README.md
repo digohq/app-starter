@@ -1,6 +1,6 @@
 # @app-starter/api
 
-NestJS backend API for the App Starter event management platform.
+NestJS backend API for the App Starter multi-tenant SaaS starter.
 
 ## Tech Stack
 

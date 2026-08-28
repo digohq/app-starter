@@ -27,7 +27,7 @@ describe('Breadcrumbs', () => {
   });
 
   it('renders a single non-clickable item as current page', () => {
-    render(<Breadcrumbs items={[{ label: 'Event Title' }]} />);
+    render(<Breadcrumbs items={[{ label: 'Project Title' }]} />);
 
     const listItems = screen.getAllByRole('listitem');
     expect(listItems).toHaveLength(1);
@@ -40,27 +40,27 @@ describe('Breadcrumbs', () => {
     render(
       <Breadcrumbs
         items={[
-          { label: 'Event', href: '/events/123' },
-          { label: 'Settings', href: '/event-management/123/edit' },
-          { label: 'Sponsors' },
+          { label: 'Project', href: '/projects/123' },
+          { label: 'Settings', href: '/projects/123/edit' },
+          { label: 'Members' },
         ]}
       />,
     );
 
-    const eventLink = screen.getByText('Event');
+    const projectLink = screen.getByText('Project');
     const settingsLink = screen.getByText('Settings');
-    const sponsors = screen.getByText('Sponsors');
+    const members = screen.getByText('Members');
 
-    expect(eventLink.closest('a')).toHaveAttribute('href', '/events/123');
-    expect(settingsLink.closest('a')).toHaveAttribute('href', '/event-management/123/edit');
-    expect(sponsors.closest('a')).toBeNull();
+    expect(projectLink.closest('a')).toHaveAttribute('href', '/projects/123');
+    expect(settingsLink.closest('a')).toHaveAttribute('href', '/projects/123/edit');
+    expect(members.closest('a')).toBeNull();
 
     const itemsWithCurrent = screen.getAllByRole('listitem');
     const lastItem = itemsWithCurrent[itemsWithCurrent.length - 1];
     expect(lastItem).toHaveAttribute('aria-current', 'page');
 
     // basic interaction sanity check
-    await user.click(eventLink);
+    await user.click(projectLink);
   });
 
   it('decodes HTML entities in labels', () => {
@@ -83,7 +83,7 @@ describe('Breadcrumbs', () => {
       <Breadcrumbs
         truncateLastItemAt={25}
         items={[
-          { label: 'Event', href: '/e' },
+          { label: 'Project', href: '/p' },
           { label: long, href: '/x' },
         ]}
       />,

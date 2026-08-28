@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { headers } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import './globals.css';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -13,14 +13,16 @@ import { ScrollToTopOnNavigate } from '@/components/layout/ScrollToTopOnNavigate
 import { domainMappingsApi } from '@/lib/domain-mappings-api';
 import { CustomDomainProvider } from '@/components/providers/CustomDomainProvider';
 import { CookieConsentBanner } from '@/components/consent/CookieConsentBanner';
+import { ACCESS_TOKEN_KEY } from '@/lib/auth-storage';
 
 export async function generateMetadata(): Promise<Metadata> {
   const headersList = await headers();
   const host = headersList.get('host') || '';
 
   const defaultMetadata: Metadata = {
-    title: 'App Starter - Event Management Platform',
-    description: 'Event management platform for organizers, attendees, speakers, and sponsors',
+    title: 'App Starter',
+    description:
+      'A multi-tenant SaaS starter with authentication, organizations, and invites already wired up.',
     icons: {
       icon: '/images/favicon.png',
     },
@@ -60,7 +62,14 @@ export default async function RootLayout({
 
   const customDomain = headersList.get('x-custom-domain');
   const customDomainOrganizationId = headersList.get('x-custom-domain-organization-id');
-  const hideSidebar = isWhiteLabelCalendar || !!customDomain;
+
+  // Every destination in the sidebar is authenticated-only, so it stays off
+  // for signed-out visitors. Reading the cookie here rather than checking auth
+  // on the client keeps the nav and the content margin in agreement, with no
+  // sidebar flashing in before it is removed again.
+  const cookieStore = await cookies();
+  const isSignedIn = !!cookieStore.get(ACCESS_TOKEN_KEY);
+  const hideSidebar = isWhiteLabelCalendar || !!customDomain || !isSignedIn;
 
   let customLogoUrl: string | null = null;
   let logoHeight: number | null = null;

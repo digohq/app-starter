@@ -16,8 +16,9 @@ jest.mock('@/lib/domain-mappings-api', () => ({
 
 describe('RootLayout generateMetadata', () => {
   const defaultMetadata = {
-    title: 'App Starter - Event Management Platform',
-    description: 'Event management platform for organizers, attendees, speakers, and sponsors',
+    title: 'App Starter',
+    description:
+      'A multi-tenant SaaS starter with authentication, organizations, and invites already wired up.',
     icons: {
       icon: '/images/favicon.png',
     },

@@ -1,4 +1,9 @@
-const ACCESS_TOKEN_KEY = 'app_starter_access_token';
+/**
+ * Name of the access-token cookie. Exported because the middleware and the
+ * root layout gate authenticated-only routes on its presence and must not
+ * drift from what {@link AuthStorage} writes.
+ */
+export const ACCESS_TOKEN_KEY = 'app_starter_access_token';
 const REFRESH_TOKEN_KEY = 'app_starter_refresh_token';
 const USER_KEY = 'app_starter_user';
 const LAST_EMAIL_KEY = 'app_starter_last_email';

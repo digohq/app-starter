@@ -1,4 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { ACCESS_TOKEN_KEY } from '@/lib/auth-storage';
+
+/**
+ * Sections of the app that only exist for a signed-in user. A logged-out
+ * visitor is sent to the login page instead of being shown the shell of a
+ * screen whose data will never load.
+ *
+ * Only prefixes that are authenticated end to end belong here. `/organization`
+ * (singular) is the public per-tenant page and stays open, as do `/invites`,
+ * which someone has to be able to open before they have an account.
+ *
+ * This is a navigation gate, not the security boundary: the cookie is readable
+ * by client script, so presence proves intent rather than identity. Every
+ * response still comes from the API, which validates the JWT on each request.
+ */
+const PROTECTED_PATH_PREFIXES = ['/dashboard', '/organizations', '/profile', '/settings'] as const;
+
+const isProtectedPath = (pathname: string): boolean =>
+  PROTECTED_PATH_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+  );
 
 // Helper to check if path is a candidate for short link (single segment, not system)
 function isShortLinkCandidate(pathname: string): boolean {
@@ -74,10 +95,19 @@ export async function middleware(request: NextRequest) {
   const hostname = request.headers.get('host') || '';
   const { pathname } = request.nextUrl;
 
-  // 1. Skip middleware for standard App Starter domains and local development
+  // 1. Authenticated-only sections, gated before anything renders so a
+  // logged-out visitor never sees a protected screen. The intended
+  // destination rides along so the login form can send them back to it.
+  if (isProtectedPath(pathname) && !request.cookies.get(ACCESS_TOKEN_KEY)) {
+    const loginUrl = new URL('/login', request.url);
+    loginUrl.searchParams.set('redirect', pathname + request.nextUrl.search);
+    return NextResponse.redirect(loginUrl, { status: 302 });
+  }
+
+  // 2. Skip middleware for standard App Starter domains and local development
   // (We keep existing domain logic for custom domains, but add short link check first)
 
-  // 2. Short Link Check (High Priority)
+  // 3. Short Link Check (High Priority)
   if (isShortLinkCandidate(pathname)) {
     const slug = pathname.substring(1); // remove leading /
     const targetUrl = await resolveShortLink(slug);
@@ -96,12 +126,12 @@ export async function middleware(request: NextRequest) {
   }
 
   // ... rest of existing middleware ...
-  // 3. Skip middleware for static assets, API routes, and standard system paths
+  // 4. Skip middleware for static assets, API routes, and standard system paths
   if (shouldSkipMiddleware(pathname)) {
     return NextResponse.next();
   }
 
-  // 4. Resolve custom domain to organization slug
+  // 5. Resolve custom domain to organization slug
   try {
     const resolution = await resolveDomain(hostname);
 
@@ -112,7 +142,7 @@ export async function middleware(request: NextRequest) {
       );
     }
 
-    // 5. Serve the organization's public page at the custom domain root.
+    // 6. Serve the organization's public page at the custom domain root.
     if (pathname === '/') {
       const publicUrl = new URL(
         `/organization/${resolution.organizationSlug}${request.nextUrl.search}`,
@@ -124,7 +154,7 @@ export async function middleware(request: NextRequest) {
       return NextResponse.rewrite(publicUrl, { request: { headers: requestHeaders } });
     }
 
-    // 6. Everything else on a custom domain belongs on the main app. Add an
+    // 7. Everything else on a custom domain belongs on the main app. Add an
     // organization-scoped path here when a vertical needs its own branded URL,
     // confirming the record belongs to this organization first.
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
