@@ -21,7 +21,7 @@
 # Railway will need to set build args in the build settings
 #
 # Build stage (Node 22 required by root package.json engines)
-FROM node:22-alpine AS builder
+FROM node:26-alpine AS builder
 
 # Accept build arguments for environment variables
 # These will be embedded in the Next.js build
@@ -59,7 +59,7 @@ RUN pnpm install --frozen-lockfile
 RUN pnpm --filter "@app-starter/shared" build && pnpm --filter "@app-starter/web" build
 
 # Production stage
-FROM node:22-alpine AS production
+FROM node:26-alpine AS production
 
 # Install wget for health checks
 RUN apk add --no-cache wget
