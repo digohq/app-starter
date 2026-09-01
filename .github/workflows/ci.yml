@@ -67,6 +67,19 @@ jobs:
           --health-timeout 5s
           --health-retries 5
 
+      # The notification tests assert a message reaches NotificationStatus.SENT,
+      # so they need a real SMTP server to deliver to. This is the same sink
+      # docker-compose gives local development — its absence here is why those
+      # tests passed on a developer machine and failed in CI.
+      mailpit:
+        image: axllent/mailpit:v1.31
+        ports: ['1025:1025', '8025:8025']
+        options: >-
+          --health-cmd "wget --quiet --tries=1 --spider http://localhost:8025"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - uses: actions/checkout@v4
 
@@ -120,6 +133,18 @@ jobs:
         ports: ['6379:6379']
         options: >-
           --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      # The end-to-end auth flows send verification and OTP mail. Without a
+      # sink those sends fail and are only logged, so the run stays green while
+      # delivery is broken; with one, the flows are exercised as they ship.
+      mailpit:
+        image: axllent/mailpit:v1.31
+        ports: ['1025:1025', '8025:8025']
+        options: >-
+          --health-cmd "wget --quiet --tries=1 --spider http://localhost:8025"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
