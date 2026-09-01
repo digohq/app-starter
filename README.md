@@ -10,11 +10,6 @@ too much between products for a starter to choose for you.
 It ships with one small example vertical — Projects — so the patterns are
 visible end to end without burying them in a domain you have to delete.
 
-```bash
-pnpm bootstrap
-pnpm dev
-```
-
 ## What you get
 
 |                    |                                                                                   |
