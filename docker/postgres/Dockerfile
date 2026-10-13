@@ -1,4 +1,4 @@
-FROM postgres:16-alpine
+FROM postgres:18-alpine
 
 # Set environment variables
 ENV POSTGRES_DB=app_starter
