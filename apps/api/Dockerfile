@@ -10,7 +10,7 @@
 #     docker buildx build --platform linux/amd64 -f apps/api/Dockerfile .
 #
 # Build stage
-FROM node:22-slim AS builder
+FROM node:26-slim AS builder
 
 RUN corepack enable && corepack prepare pnpm@10.26.0 --activate
 
@@ -30,7 +30,7 @@ RUN pnpm prisma generate
 RUN pnpm build
 
 # Production stage
-FROM node:22-slim AS production
+FROM node:26-slim AS production
 
 # wget backs the HEALTHCHECK below. No build toolchain is installed on purpose:
 # the only native dependency is bcrypt, which ships prebuilt binaries, so
