@@ -9,3 +9,6 @@ export * from './auth.types';
 
 // Organization types
 export * from './organization.types';
+
+// Video types
+export * from './video.types';

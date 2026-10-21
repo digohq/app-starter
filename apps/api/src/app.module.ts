@@ -18,6 +18,7 @@ import { ShortLinksModule } from './features/short-links/short-links.module';
 import { AdminImpersonationModule } from './admin-impersonation/admin-impersonation.module';
 import { AdminDashboardModule } from './admin-dashboard/admin-dashboard.module';
 import { ProjectsModule } from './projects/projects.module';
+import { VideosModule } from './videos/videos.module';
 
 @Module({
   imports: [
@@ -52,6 +53,7 @@ import { ProjectsModule } from './projects/projects.module';
     AdminImpersonationModule,
     AdminDashboardModule,
     ProjectsModule,
+    VideosModule,
   ],
   controllers: [AppController],
   providers: [

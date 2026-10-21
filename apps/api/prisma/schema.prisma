@@ -58,6 +58,7 @@ model User {
   notificationPreferences NotificationPreference[]
   inAppNotifications      InAppNotification[]
   createdProjects         Project[]                @relation("ProjectCreator")
+  createdVideos           Video[]                  @relation("VideoCreator")
 
   adminImpersonationAudits AdminImpersonationAudit[] @relation("AdminImpersonationTargetUser")
   quarantinedAudits        AdminQuarantineAudit[]    @relation("QuarantinedUser")
@@ -153,6 +154,7 @@ model Organization {
   notifications           Notification[]
   notificationPreferences NotificationPreference[]
   projects                Project[]
+  videos                  Video[]
 
   @@map("organizations")
 }
@@ -414,8 +416,51 @@ model Project {
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   createdBy    User         @relation("ProjectCreator", fields: [createdById], references: [id])
 
+  videos Video[]
+
   @@unique([organizationId, slug])
   @@index([organizationId, archivedAt])
   @@index([createdById])
   @@map("projects")
+}
+
+// ============================================================================
+// Videos — submitted within a project and processed by an Orkes workflow
+// ============================================================================
+
+/// Mirrors the Conductor states we surface. PAUSED is reported as RUNNING.
+enum VideoStatus {
+  PENDING // Saved; the workflow has not been started yet
+  RUNNING
+  COMPLETED
+  FAILED // Includes a workflow that could not be started
+  TIMED_OUT
+  TERMINATED
+}
+
+model Video {
+  id             String      @id @default(uuid())
+  /// Duplicates the project's organization so every query can filter by tenant
+  /// directly, as the rest of the schema does.
+  organizationId String      @map("organization_id")
+  projectId      String      @map("project_id")
+  createdById    String      @map("created_by_id")
+  name           String
+  url            String
+  /// Orkes execution id; null until the start call succeeds.
+  workflowId     String?     @map("workflow_id")
+  status         VideoStatus @default(PENDING)
+  output         Json?
+  errorMessage   String?     @map("error_message")
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  project      Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdBy    User         @relation("VideoCreator", fields: [createdById], references: [id])
+
+  @@index([organizationId, projectId, createdAt])
+  @@index([createdById])
+  @@map("videos")
 }

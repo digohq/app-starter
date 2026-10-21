@@ -136,6 +136,32 @@ class EnvironmentVariables {
   @IsString()
   @IsOptional()
   R2_PUBLIC_URL?: string;
+
+  /**
+   * Orkes Conductor. Optional so the app boots without an Orkes account; the
+   * video workflow fails with a 503 at call time instead. The host includes
+   * the `/api` suffix, e.g. https://developer.orkescloud.com/api.
+   */
+  @IsUrl({ require_tld: false })
+  @IsOptional()
+  CONDUCTOR_SERVER_URL?: string;
+
+  @IsString()
+  @IsOptional()
+  CONDUCTOR_AUTH_KEY?: string;
+
+  @IsString()
+  @IsOptional()
+  CONDUCTOR_AUTH_SECRET?: string;
+
+  @IsString()
+  @IsOptional()
+  CONDUCTOR_WORKFLOW_NAME?: string;
+
+  /** Unset runs the latest version of the workflow. */
+  @IsNumber()
+  @IsOptional()
+  CONDUCTOR_WORKFLOW_VERSION?: number;
 }
 
 /**

@@ -16,6 +16,7 @@ For who to host these with, see [providers.md](providers.md).
 | [SMTP](#smtp-email)                   | For real email | Sends fail; nothing else breaks                 |
 | [Mailpit](#mailpit-local-email)       | Local only     | Development email has nowhere to go             |
 | [Google OAuth](#google-oauth)         | No             | "Sign in with Google" fails; other auth is fine |
+| [Orkes Conductor](#orkes-conductor)   | No             | Submitted videos are saved as FAILED            |
 | [Object storage](#object-storage)     | No             | Files are written to local disk                 |
 | [Custom domains](#custom-domains-dns) | No             | Tenants use the main app domain                 |
 | [Local HTTPS](#local-https)           | No             | Development runs over HTTP                      |
@@ -239,6 +240,50 @@ character, including scheme, port, and trailing path.
 all work. The strategy falls back to placeholder credentials, so the Google
 button is present but the flow fails at Google. Hide the button in
 `components/auth/GoogleAuthButton.tsx` if you are not using it.
+
+---
+
+## Orkes Conductor
+
+Runs the workflow for videos submitted on a project page. The API starts one
+workflow run per video, sending the URL as `videoUrl`, and the page polls the
+API until the run finishes.
+
+**Where:** `apps/api/.env`. The names match the
+[Orkes quickstart](https://orkes.io/content/quickstart/connect), so the same
+values work for the `conductor` CLI.
+
+```bash
+CONDUCTOR_SERVER_URL=https://developer.orkescloud.com/api
+CONDUCTOR_AUTH_KEY=
+CONDUCTOR_AUTH_SECRET=
+CONDUCTOR_WORKFLOW_NAME=video_classification
+CONDUCTOR_WORKFLOW_VERSION=1   # omit to run the latest version
+```
+
+**Getting credentials:** in Orkes, **Access Control → Applications**, create an
+application, generate an access key, and give the application **Execute**
+permission on the workflow. `/api` is appended to the server URL if it is
+missing.
+
+**How results come back:** the browser polls
+`GET /api/organizations/:orgId/projects/:projectId/videos` every 3 seconds
+while any video is unfinished. On each read the API asks Orkes about videos
+still RUNNING and stores the final status and output once the run ends, so a
+finished video is never fetched from Orkes again.
+
+**A run stuck in RUNNING** usually means a worker task has no worker polling
+it. Check with:
+
+```bash
+conductor workflow get-execution -c <workflowId>
+```
+
+Tasks in `SCHEDULED` are waiting for a worker.
+
+**Without it:** the app runs normally. Submitting a video saves it with status
+FAILED and the message "Orkes is not configured", naming the missing
+variables.
 
 ---
 

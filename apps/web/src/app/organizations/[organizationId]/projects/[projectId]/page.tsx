@@ -22,6 +22,7 @@ import {
 import { PageContainer } from '@/components/layout/PageContainer';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { ProjectForm, type ProjectFormData } from '@/components/projects/ProjectForm';
+import { ProjectVideosSection } from '@/components/videos/ProjectVideosSection';
 import { organizationsApi } from '@/lib/organizations-api';
 import { projectsApi } from '@/lib/projects-api';
 
@@ -203,6 +204,8 @@ export default function ProjectPage({ params }: PageProps) {
             </CardContent>
           </Card>
         )}
+
+        <ProjectVideosSection organizationId={organizationId} projectId={projectId} />
       </div>
 
       <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
